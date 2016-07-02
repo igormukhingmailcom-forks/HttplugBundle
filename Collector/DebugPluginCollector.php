@@ -22,11 +22,17 @@ class DebugPluginCollector extends DataCollector
     private $formatter;
 
     /**
+     * @var PluginJournal
+     */
+    private $journal;
+
+    /**
      * @param Formatter $formatter
      */
-    public function __construct(Formatter $formatter = null)
+    public function __construct(Formatter $formatter, PluginJournal $journal)
     {
-        $this->formatter = $formatter ?: new SimpleFormatter();
+        $this->formatter = $formatter;
+        $this->journal = $journal;
     }
 
     /**
@@ -117,6 +123,14 @@ class DebugPluginCollector extends DataCollector
     }
 
     /**
+     * @return PluginJournal
+     */
+    public function getJournal()
+    {
+        return $this->journal;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function collect(Request $request, Response $response, \Exception $exception = null)
@@ -130,5 +144,15 @@ class DebugPluginCollector extends DataCollector
     public function getName()
     {
         return 'httplug';
+    }
+
+    public function serialize()
+    {
+        return serialize([$this->data, $this->journal]);
+    }
+
+    public function unserialize($data)
+    {
+        list($this->data, $this->journal) = unserialize($data);
     }
 }

@@ -53,7 +53,7 @@
     {% for name, client in collector.clients %}
         <h3>{{ name }}</h3>
         {% for stackIndex in client.stackIndexKeys %}
-            {{ macro.printMessages(client.requstStack(stackIndex), client.responseStack(stackIndex)) }}
+            {{ macro.printMessages(client.requstStack(stackIndex), client.responseStack(stackIndex), collector.journal.plugins(name)) }}
         {% endfor %}
     {% else %}
         <div class="empty">
@@ -63,7 +63,7 @@
 
 {% endblock %}
 
-{% macro printMessages(requestStack, responseStack) %}
+{% macro printMessages(requestStack, responseStack, pluginNames) %}
     <table>
         <tr>
             <th width="50%">Request</th>
@@ -79,10 +79,13 @@
                 <td colspan="2" style="text-align:center">See all</td>
             </tr>
             {% for idx in 1..requestStack|length-1 %}
-            <tr>
-                <td>{{ requestStack[idx]|nl2br }}</td>
-                <td>{{ responseStack[idx]|nl2br }}</td>
-            </tr>
+                <tr>
+                    <td colspan="2" style="">{{ pluginNames[idx-1] }}</td>
+                </tr>
+                <tr>
+                    <td>{{ requestStack[idx]|nl2br }}</td>
+                    <td>{{ responseStack[idx]|nl2br }}</td>
+                </tr>
             {% endfor %}
         {% endif %}
     </table>

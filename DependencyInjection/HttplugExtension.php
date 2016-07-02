@@ -226,6 +226,10 @@ class HttplugExtension extends Extension
                 ->addArgument(new Reference($arguments['factory']))
                 ->addArgument($arguments['config'])
                 ->addArgument(['debug_plugins'=>[new Reference($serviceIdDebugPlugin)]]);
+
+            // tell the plugin journal what plugins we used
+            $container->getDefinition('httplug.collector.plugin_journal')
+                ->addMethodCall('setPlugins', [$name, $arguments['plugins']]);
         }
 
 
