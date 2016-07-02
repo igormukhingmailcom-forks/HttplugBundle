@@ -7,6 +7,7 @@ use Http\Client\Common\HttpMethodsClient;
 use Http\Client\Common\Plugin\AuthenticationPlugin;
 use Http\Client\Common\PluginClient;
 use Http\HttplugBundle\ClientFactory\DummyClient;
+use Http\HttplugBundle\Collector\DebugPlugin;
 use Http\Message\Authentication\BasicAuth;
 use Http\Message\Authentication\Bearer;
 use Http\Message\Authentication\Wsse;
@@ -211,6 +212,13 @@ class HttplugExtension extends Extension
             $def->setFactory([new Reference($arguments['factory']), 'createClient'])
                 ->addArgument($arguments['config']);
         } else {
+            // Create a new plugin service for this client
+            $serviceIdDebugPlugin = $serviceId.'.debug_plugin';
+            $container->register($serviceIdDebugPlugin, DebugPlugin::class)
+                ->addArgument(new Reference('httplug.collector.debug_collector'))
+                ->addArgument($name)
+                ->setPublic(false);
+            
             $def->setFactory('Http\HttplugBundle\ClientFactory\PluginClientFactory::createPluginClient')
                 ->addArgument(
                     array_map(
@@ -221,7 +229,8 @@ class HttplugExtension extends Extension
                     )
                 )
                 ->addArgument(new Reference($arguments['factory']))
-                ->addArgument($arguments['config']);
+                ->addArgument($arguments['config'])
+                ->addArgument(['debug_plugins'=>[new Reference($serviceIdDebugPlugin)]]);
         }
 
 
