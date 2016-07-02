@@ -34,7 +34,7 @@ class DebugPluginCollector extends DataCollector
      */
     public function addRequest(RequestInterface $request, $clientName, $depth)
     {
-        $this->data[$clientName]['requests'][$depth][] = $this->formatter->formatRequest($request);
+        $this->data[$clientName]['request'][$depth][] = $this->formatter->formatRequest($request);
     }
 
     /**
@@ -58,7 +58,62 @@ class DebugPluginCollector extends DataCollector
             $formattedResponse = sprintf('Unexpected exception of type "%s"', get_class($exception));
         }
 
-        $this->data[$clientName]['failure'][$depth][] = $formattedResponse;
+        $this->data[$clientName]['response'][$depth][] = $formattedResponse;
+        $this->data[$clientName]['failure'][$depth][] = true;
+    }
+
+
+    /**
+     * Returns the successful request-resonse pairs.
+     *
+     * @return array
+     */
+    public function getSucessfulRequests()
+    {
+        $count = 0;
+        foreach ($this->data as $client) {
+            if (isset($client['request'])) {
+                $count += count($client['request'][0]);
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Returns the failed request-resonse pairs.
+     *
+     * @return array
+     */
+    public function getFailedRequests()
+    {
+        $count = 0;
+        foreach ($this->data as $client) {
+            if (isset($client['failure'])) {
+                $count += count($client['failure'][0]);
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Returns the total number of request made.
+     *
+     * @return int
+     */
+    public function getTotalRequests()
+    {
+        return $this->getSucessfulRequests() + $this->getFailedRequests();
+    }
+
+    /**
+     *
+     * @return ClientDataCollector[]
+     */
+    public function getClients()
+    {
+        return ClientDataCollector::createFromCollectedData($this->data);
     }
 
     /**
@@ -74,6 +129,6 @@ class DebugPluginCollector extends DataCollector
      */
     public function getName()
     {
-        return 'httplug_debug';
+        return 'httplug';
     }
 }

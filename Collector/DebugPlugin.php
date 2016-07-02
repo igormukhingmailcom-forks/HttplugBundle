@@ -52,12 +52,12 @@ class DebugPlugin implements Plugin
         $collector->addRequest($request, $clientName, ++$depth);
 
         return $next($request)->then(function (ResponseInterface $response) use ($collector, $clientName, &$depth) {
-            $collector->addResponse($response, $clientName, --$depth);
+            $collector->addResponse($response, $clientName, $depth--);
 
 
             return $response;
         }, function (Exception $exception) use ($collector, $clientName, &$depth) {
-            $collector->addFailure($exception, $clientName, --$depth);
+            $collector->addFailure($exception, $clientName, $depth--);
 
             throw $exception;
         });

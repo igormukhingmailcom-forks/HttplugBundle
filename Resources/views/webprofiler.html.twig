@@ -17,11 +17,11 @@
         {% set text %}
             <div class="sf-toolbar-info-piece">
                 <b>Successful requests</b>
-                <span>{{ collector.sucessfulRequests|length }}</span>
+                <span>{{ collector.sucessfulRequests }}</span>
             </div>
             <div class="sf-toolbar-info-piece">
                 <b>Faild requests</b>
-                <span>{{ collector.failedRequests|length }}</span>
+                <span>{{ collector.failedRequests }}</span>
             </div>
 
         {% endset %}
@@ -50,37 +50,40 @@
 
 {% block panel %}
     <h2>HTTPlug</h2>
-    {% if (collector.failedRequests|length > 0) %}
-        <h3>Failed requests</h3>
-        {{ macro.printMessages(collector.failedRequests) }}
-    {% endif %}
-
-    {% if (collector.sucessfulRequests|length > 0) %}
-        <h3>Successful requests</h3>
-        {{ macro.printMessages(collector.sucessfulRequests) }}
-    {% endif %}
-
-    {% if collector.totalRequests == 0 %}
-
+    {% for name, client in collector.clients %}
+        <h3>{{ name }}</h3>
+        {% for stackIndex in client.stackIndexKeys %}
+            {{ macro.printMessages(client.requstStack(stackIndex), client.responseStack(stackIndex)) }}
+        {% endfor %}
+    {% else %}
         <div class="empty">
             <p>No request were sent.</p>
         </div>
-    {% endif %}
+    {% endfor %}
 
 {% endblock %}
 
-{% macro printMessages(messages) %}
+{% macro printMessages(requestStack, responseStack) %}
     <table>
         <tr>
-            <th>Request</th>
-            <th>Response</th>
+            <th width="50%">Request</th>
+            <th width="50%">Response</th>
         </tr>
 
-        {% for message in messages %}
+        <tr>
+            <td>{{ requestStack[0]|nl2br }}</td>
+            <td>{{ responseStack[0]|nl2br }}</td>
+        </tr>
+        {% if requestStack|length > 1 %}
             <tr>
-                <td>{{ message['request'] }}</td>
-                <td>{{ message['response'] }}</td>
+                <td colspan="2" style="text-align:center">See all</td>
             </tr>
-        {% endfor %}
+            {% for idx in 1..requestStack|length-1 %}
+            <tr>
+                <td>{{ requestStack[idx]|nl2br }}</td>
+                <td>{{ responseStack[idx]|nl2br }}</td>
+            </tr>
+            {% endfor %}
+        {% endif %}
     </table>
 {% endmacro %}

@@ -76,11 +76,7 @@ class HttplugExtension extends Extension
                 $first = $name;
             }
 
-            if (isset($config['_inject_collector_plugin'])) {
-                array_unshift($arguments['plugins'], 'httplug.collector.history_plugin');
-            }
-
-            $this->configureClient($container, $name, $arguments);
+            $this->configureClient($container, $name, $arguments, $config['_inject_collector_plugin']);
         }
 
         // If we have clients configured
@@ -90,10 +86,12 @@ class HttplugExtension extends Extension
                 $container->setAlias('httplug.client.default', 'httplug.client.'.$first);
             }
         } elseif (isset($config['_inject_collector_plugin'])) {
+            $serviceIdDebugPlugin = $this->registerDebugPlugin($container, 'default');
             // No client was configured. Make sure to inject history plugin to the auto discovery client.
             $container->register('httplug.client', PluginClient::class)
                 ->addArgument(new Reference('httplug.client.default'))
-                ->addArgument([new Reference('httplug.collector.history_plugin')]);
+                ->addArgument([new Reference('httplug.collector.history_plugin')])
+                ->addArgument(['debug_plugins'=>[new Reference($serviceIdDebugPlugin)]]);
         }
     }
 
@@ -202,23 +200,20 @@ class HttplugExtension extends Extension
      * @param ContainerBuilder $container
      * @param string           $name
      * @param array            $arguments
+     * @param bool             $enableCollector
      */
-    private function configureClient(ContainerBuilder $container, $name, array $arguments)
+    private function configureClient(ContainerBuilder $container, $name, array $arguments, $enableCollector)
     {
         $serviceId = 'httplug.client.'.$name;
         $def = $container->register($serviceId, DummyClient::class);
 
-        if (empty($arguments['plugins'])) {
+        // If there is no plugins nor should we use the data collector
+        if (empty($arguments['plugins']) && !$enableCollector) {
             $def->setFactory([new Reference($arguments['factory']), 'createClient'])
                 ->addArgument($arguments['config']);
         } else {
-            // Create a new plugin service for this client
-            $serviceIdDebugPlugin = $serviceId.'.debug_plugin';
-            $container->register($serviceIdDebugPlugin, DebugPlugin::class)
-                ->addArgument(new Reference('httplug.collector.debug_collector'))
-                ->addArgument($name)
-                ->setPublic(false);
-            
+            $serviceIdDebugPlugin = $this->registerDebugPlugin($container, $name);
+
             $def->setFactory('Http\HttplugBundle\ClientFactory\PluginClientFactory::createPluginClient')
                 ->addArgument(
                     array_map(
@@ -251,5 +246,24 @@ class HttplugExtension extends Extension
                 ->setPublic(false)
                 ->setDecoratedService($serviceId);
         }
+    }
+
+    /**
+     * Create a new plugin service for this client
+     *
+     * @param ContainerBuilder $container
+     * @param string $name
+     *
+     * @return string
+     */
+    private function registerDebugPlugin(ContainerBuilder $container, $name)
+    {
+        $serviceIdDebugPlugin = 'httplug.client.'.$name.'.debug_plugin';
+        $container->register($serviceIdDebugPlugin, DebugPlugin::class)
+            ->addArgument(new Reference('httplug.collector.debug_collector'))
+            ->addArgument($name)
+            ->setPublic(false);
+
+        return $serviceIdDebugPlugin;
     }
 }
